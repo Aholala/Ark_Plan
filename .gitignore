@@ -53,3 +53,4 @@ dkms.conf
 
 # debug information files
 *.dwo
+remote_cotrol/ye_remote_control/remote_control
