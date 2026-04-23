@@ -1,0 +1,10 @@
+/.vscode/
+/.settings/
+.clangd
+
+/.cache
+/build/**
+!/build/**/
+!/build/**/*.elf
+!/build/**/*.hex
+!/build/**/*.map
