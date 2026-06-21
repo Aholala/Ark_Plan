@@ -48,10 +48,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Bsp/bsp_ws2812.c
     User/Bsp/bsp_encoder.c
     User/Bsp/bsp_motor.c
-    User/Bsp/bsp_remote_radio.c
+    User/Bsp/bsp_radio_link.c
     User/Bsp/bsp_time.c
     User/Module/module_encoder.c
     User/Module/module_motor.c
+    User/Module/module_remote_protocol.c
     User/Module/module_ws2812.c
     User/Bsp/bsp_nrf24l01.c
     User/App/app_remote.c

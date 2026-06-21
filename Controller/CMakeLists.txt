@@ -46,13 +46,14 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     User/App/app_remote.c
+    User/Module/module_periodic_timer.c
+    User/Module/module_remote_protocol.c
     User/Bsp/bsp_ad.c
     User/Bsp/bsp_key.c
     User/Bsp/bsp_nrf24l01.c
-    User/Bsp/bsp_remote_radio.c
+    User/Bsp/bsp_radio_link.c
     User/Bsp/bsp_oled.c
     User/Bsp/bsp_oled_data.c
-    User/Bsp/bsp_timer.c
     User/Bsp/bsp_time.c
 )
 
@@ -65,6 +66,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     User/App
     User/Bsp
+    User/Module
 )
 
 # Add project symbols (macros)

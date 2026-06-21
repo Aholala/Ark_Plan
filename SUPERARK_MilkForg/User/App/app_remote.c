@@ -14,7 +14,7 @@
 
 #include "app_remote.h"
 
-#include "bsp_remote_radio.h" /* 无线通信底层驱动 */
+#include "bsp_radio_link.h" /* 无线链路层 */
 #include "bsp_time.h"         /* 时间基准（毫秒） */
 
 #include <string.h>
@@ -38,7 +38,7 @@ void App_Remote_Init(void) {
   memset(&app_remote_data, 0, sizeof(app_remote_data));
   app_remote_last_key_seq = 0U;
 
-  Bsp_RemoteRadio_Init(); /* 初始化NRF24L01并设置为接收模式 */
+  Bsp_RadioLink_Init(); /* 初始化无线链路并设置为接收模式 */
 }
 
 /**
@@ -51,14 +51,14 @@ void App_Remote_Init(void) {
  * APP_REMOTE_TIMEOUT_MS，则标记为断开连接并清零摇杆值
  */
 void App_Remote_Task(void) {
-  BspRemoteRadioPacket_t packet;            /* 存放接收到的数据包 */
-  const BspRemoteRadioDebug_t *radio_debug; /* 指向调试信息结构体的指针 */
+  BspRadioLinkPacket_t packet;            /* 存放接收到的数据包 */
+  const BspRadioLinkDebug_t *radio_debug; /* 指向调试信息结构体的指针 */
   uint32_t now = Bsp_Time_GetMs();          /* 获取当前系统时间（毫秒） */
 
   /* 连续取出多个包，防止FIFO积压，确保使用最新数据 */
   for (uint8_t i = 0U; i < APP_REMOTE_RX_DRAIN_LIMIT; i++) {
     /* 尝试接收一包数据，成功返回1，无数据返回0 */
-    if (Bsp_RemoteRadio_Receive(&packet) == 0U) {
+    if (Bsp_RadioLink_Receive(&packet) == 0U) {
       break; /* 无更多数据，退出循环 */
     }
 
@@ -84,7 +84,7 @@ void App_Remote_Task(void) {
   }
 
   /* 获取底层NRF24L01的调试信息（状态寄存器、引脚电平、FIFO状态等） */
-  radio_debug = Bsp_RemoteRadio_GetDebug();
+  radio_debug = Bsp_RadioLink_GetDebug();
   app_remote_data.nrf_status = radio_debug->status;
   app_remote_data.nrf_config = radio_debug->config;
   app_remote_data.nrf_irq_pin = radio_debug->irq_pin;
