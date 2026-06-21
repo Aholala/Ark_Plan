@@ -19,13 +19,18 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "dma.h"
 #include "spi.h"
-#include "usart.h"
+#include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "app_remote.h"
+#include "bsp_encoder.h"
+#include "bsp_motor.h"
+#include "module_motor.h"
 
 /* USER CODE END Includes */
 
@@ -47,6 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+static ModuleMotor_t motor;
 
 /* USER CODE END PV */
 
@@ -91,10 +97,20 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
   MX_SPI3_Init();
-  MX_USART3_UART_Init();
+  MX_TIM1_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
+  MX_TIM5_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
+  App_Remote_Init();
+  Bsp_Encoder_Init();
+  Bsp_Motor_Init();
+  Module_Motor_Init(&motor, Bsp_Motor_GetOps());
 
   /* USER CODE END 2 */
 

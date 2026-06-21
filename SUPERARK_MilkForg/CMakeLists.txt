@@ -46,7 +46,15 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     User/Bsp/bsp_ws2812.c
+    User/Bsp/bsp_encoder.c
+    User/Bsp/bsp_motor.c
+    User/Bsp/bsp_remote_radio.c
+    User/Bsp/bsp_time.c
+    User/Module/module_encoder.c
+    User/Module/module_motor.c
     User/Module/module_ws2812.c
+    User/Bsp/bsp_nrf24l01.c
+    User/App/app_remote.c
 )
 
 # Add include paths
