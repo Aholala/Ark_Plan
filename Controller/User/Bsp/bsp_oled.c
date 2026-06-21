@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define OLED_POWER_ON_DELAY_MS 50U
+
 /**
   * 数据存储格式：
   * 纵向8点，高位在下，先从左到右，再从上到下
@@ -119,9 +121,22 @@ void OLED_W_SDA(uint8_t BitValue)
   */
 void OLED_GPIO_Init(void)
 {
+	GPIO_InitTypeDef GPIO_InitStructure = {0};
+
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	GPIO_InitStructure.Pin = OLED_SCL_Pin | OLED_SDA_Pin;
+	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_OD;
+	GPIO_InitStructure.Pull = GPIO_PULLUP;
+	GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+
 	/*释放SCL和SDA*/
 	OLED_W_SCL(1);
 	OLED_W_SDA(1);
+
+	/* Cold power-on needs a short wait before the SSD1306 accepts commands. */
+	HAL_Delay(OLED_POWER_ON_DELAY_MS);
 }
 
 /*********************引脚配置**********************/
@@ -1444,8 +1459,5 @@ void OLED_DrawArc(int16_t X, int16_t Y, uint8_t Radius, int16_t StartAngle, int1
 	}
 }
 
-/*********************功能函数*/
+/*********************功能函数**********************/
 
-
-/*****************江协科技|版权所有****************/
-/*****************jiangxiekeji.com*****************/
