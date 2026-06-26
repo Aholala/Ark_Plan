@@ -1,5 +1,5 @@
 /**
- * @file app_remote.c
+ * @file app_remote_task.c
  * @author Ahola邱泽钦 (aholace0328@gmail.com)
  * @brief 遥控器应用层模块（接收端处理）
  * @version 1.0
@@ -9,13 +9,14 @@
  *
  * 本模块负责接收来自遥控器发送端的数据包（通过NRF24L01），
  * 解析摇杆值、按键信息，并维护连接状态和调试信息。
- * 该模块通常运行在机器人底盘等接收设备上。
+ * 该模块运行在 remoteTask 中。
  */
 
-#include "app_remote.h"
+#include "app_remote_task.h"
 
 #include "bsp_radio_link.h" /* 无线链路层 */
-#include "bsp_time.h"         /* 时间基准（毫秒） */
+#include "bsp_time.h"       /* 时间基准（毫秒） */
+#include "cmsis_os.h"
 
 #include <string.h>
 
@@ -53,7 +54,7 @@ void App_Remote_Init(void) {
 void App_Remote_Task(void) {
   BspRadioLinkPacket_t packet;            /* 存放接收到的数据包 */
   const BspRadioLinkDebug_t *radio_debug; /* 指向调试信息结构体的指针 */
-  uint32_t now = Bsp_Time_GetMs();          /* 获取当前系统时间（毫秒） */
+  uint32_t now = Bsp_Time_GetMs();        /* 获取当前系统时间（毫秒） */
 
   /* 连续取出多个包，防止FIFO积压，确保使用最新数据 */
   for (uint8_t i = 0U; i < APP_REMOTE_RX_DRAIN_LIMIT; i++) {
@@ -113,3 +114,14 @@ void App_Remote_Task(void) {
  * @note  该函数返回的指针指向静态内部数据，上层应用可安全读取
  */
 const AppRemoteData_t *App_Remote_GetData(void) { return &app_remote_data; }
+
+void StartRemoteTask(void *argument) {
+  (void)argument;
+
+  App_Remote_Init();
+
+  for (;;) {
+    App_Remote_Task();
+    osDelay(1);
+  }
+}

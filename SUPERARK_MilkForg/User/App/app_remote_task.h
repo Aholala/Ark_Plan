@@ -1,5 +1,5 @@
 /**
- * @file app_remote.h
+ * @file app_remote_task.h
  * @author Ahola邱泽钦 (aholace0328@gmail.com)
  * @brief 遥控器应用层模块头文件（接收端）
  * @version 1.0
@@ -12,8 +12,8 @@
  * 并维护连接状态、调试信息等，供上层控制算法使用。
  */
 
-#ifndef __APP_REMOTE_H
-#define __APP_REMOTE_H
+#ifndef __APP_REMOTE_TASK_H
+#define __APP_REMOTE_TASK_H
 
 #include "main.h" /* 包含HAL库及基础类型定义 */
 
@@ -71,4 +71,6 @@ void App_Remote_Task(void);
  */
 const AppRemoteData_t *App_Remote_GetData(void);
 
-#endif /* __APP_REMOTE_H */
+void StartRemoteTask(void *argument);
+
+#endif /* __APP_REMOTE_TASK_H */

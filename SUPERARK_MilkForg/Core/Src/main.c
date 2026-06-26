@@ -27,10 +27,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "app_remote.h"
 #include "bsp_encoder.h"
-#include "bsp_motor.h"
-#include "module_motor.h"
+#include "bsp_pwm.h"
 
 /* USER CODE END Includes */
 
@@ -41,6 +39,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define IR2104_MOTOR_TEST_ENABLE 0U
+#define IR2104_MOTOR_TEST_DUTY 10U
+#define IR2104_DEADTIME_US 10U
 
 /* USER CODE END PD */
 
@@ -52,7 +53,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static ModuleMotor_t motor;
 
 /* USER CODE END PV */
 
@@ -65,6 +65,74 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/*
+ * IR2104 full-bridge direct PWM test.
+ *
+ * Each motor uses two IR2104 inputs:
+ *   forward: IN_A = PWM, IN_B = 0
+ *   reverse: IN_A = 0,   IN_B = PWM
+ *   stop:    IN_A = 0,   IN_B = 0
+ *
+ * Channel pairs:
+ *   M1: TIM8_CH1 / TIM8_CH2
+ *   M2: TIM8_CH3 / TIM8_CH4
+ *   M3: TIM4_CH1 / TIM4_CH2
+ *   M4: TIM4_CH3 / TIM4_CH4
+ *   M5: TIM5_CH3 / TIM5_CH4
+ *   M6: TIM1_CH1 / TIM1_CH3
+ *
+ * SD is pulled high on the board, so all PWM pins are initialized to 0% high
+ * duty before enabling test output.
+ *
+ * The timer BDTR dead-time setting is not used here because these signals are
+ * two normal PWM channels feeding two IR2104 IN pins, not CHx/CHxN outputs.
+ * Dead time is applied in software by turning both IN pins off before changing
+ * bridge direction.
+ */
+#if IR2104_MOTOR_TEST_ENABLE
+static void IR2104_DelayUs(uint32_t us)
+{
+  uint32_t start;
+  uint32_t ticks;
+
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+  start = DWT->CYCCNT;
+  ticks = (SystemCoreClock / 1000000U) * us;
+  while ((uint32_t)(DWT->CYCCNT - start) < ticks)
+  {
+  }
+}
+
+static void IR2104_SetBridgeWithDeadtime(BspPwmChannel_t in_a,
+                                         BspPwmChannel_t in_b,
+                                         uint8_t duty_a,
+                                         uint8_t duty_b)
+{
+  Bsp_Pwm_SetDuty(in_a, 0U);
+  Bsp_Pwm_SetDuty(in_b, 0U);
+  IR2104_DelayUs(IR2104_DEADTIME_US);
+  Bsp_Pwm_SetDuty(in_a, duty_a);
+  Bsp_Pwm_SetDuty(in_b, duty_b);
+}
+#endif
+
+static void IR2104_MotorTest_Apply(void)
+{
+#if IR2104_MOTOR_TEST_ENABLE
+  /* M1 forward at low duty for first bring-up. */
+  IR2104_SetBridgeWithDeadtime(BSP_PWM_TIM8_CH1, BSP_PWM_TIM8_CH2,
+                               IR2104_MOTOR_TEST_DUTY, 0U);
+
+  /* Keep the other bridges stopped. */
+  IR2104_SetBridgeWithDeadtime(BSP_PWM_TIM8_CH3, BSP_PWM_TIM8_CH4, 0U, 0U);
+  IR2104_SetBridgeWithDeadtime(BSP_PWM_TIM4_CH1, BSP_PWM_TIM4_CH2, 0U, 0U);
+  IR2104_SetBridgeWithDeadtime(BSP_PWM_TIM4_CH3, BSP_PWM_TIM4_CH4, 0U, 0U);
+  IR2104_SetBridgeWithDeadtime(BSP_PWM_TIM5_CH3, BSP_PWM_TIM5_CH4, 0U, 0U);
+  IR2104_SetBridgeWithDeadtime(BSP_PWM_TIM1_CH1, BSP_PWM_TIM1_CH3, 0U, 0U);
+#endif
+}
 
 /* USER CODE END 0 */
 
@@ -107,10 +175,9 @@ int main(void)
   MX_TIM5_Init();
   MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
-  App_Remote_Init();
   Bsp_Encoder_Init();
-  Bsp_Motor_Init();
-  Module_Motor_Init(&motor, Bsp_Motor_GetOps());
+  Bsp_Pwm_Init();
+  IR2104_MotorTest_Apply();
 
   /* USER CODE END 2 */
 

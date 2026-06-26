@@ -1,25 +1,27 @@
 # SUPERARK_MilkForg F405 主控工程
 
-这是 STM32F405RGT6 主控工程，当前主要负责接收遥控器 NRF24L01 控制包，并提供电机、编码器、WS2812 等底层和模块化接口。目标平台是麦轮底盘，不是平衡车。
+这是 STM32F405RGT6 主控工程，当前主要负责接收遥控器 NRF24L01 控制包、通过 USB 虚拟串口接收视觉颜色结果，并提供 PWM、编码器、WS2812 等底层和模块化接口。目标平台是麦轮底盘，不是平衡车。
 
 ## 工程结构
 
 ```text
 User/
   App/
-    app_remote.c/.h              遥控接收应用逻辑
+    app_remote_task.c/.h         遥控接收任务与遥控数据状态
+    app_ws2812_task.c/.h         WS2812 灯带任务，包含 USB 初始化和视觉颜色显示逻辑
   Bsp/
     bsp_encoder.c/.h             TIM2/TIM3 编码器硬件适配
-    bsp_motor.c/.h               电机 PWM 硬件适配
     bsp_nrf24l01.c/.h            NRF24L01 芯片驱动
     bsp_nrf24l01_define.h        NRF24L01 寄存器和命令定义
+    bsp_pwm.c/.h                 TIM1/TIM4/TIM5/TIM8 PWM 输出适配
     bsp_radio_link.c/.h          无线链路适配层
     bsp_time.c/.h                系统时间接口
+    bsp_usb_cdc.c/.h             USB CDC 接收缓存和回显
     bsp_ws2812.c/.h              WS2812 硬件适配
   Module/
     module_encoder.c/.h          编码器抽象层
-    module_motor.c/.h            电机抽象层
     module_remote_protocol.c/.h  遥控协议编解码
+    module_vision_protocol.c/.h  视觉 USB 颜色协议解析
     module_ws2812.c/.h           WS2812 抽象层
 ```
 
@@ -30,6 +32,44 @@ User/
 - `App` 层处理应用业务，比如接收遥控器数据、维护连接状态、记录按键事件。
 
 不要在 App 层直接读写 NRF 寄存器、TIM 通道或 GPIO。
+
+## USB 视觉颜色协议
+
+视觉通过 USB 虚拟串口发送 6 字节定长帧：
+
+```text
+Byte0  Byte1  Byte2          Byte3        Byte4  Byte5
+0xA5   0x5A   基础框颜色ID   核心框颜色ID  0x00   CRC
+```
+
+CRC 为前 5 个字节异或：
+
+```text
+CRC = Byte0 ^ Byte1 ^ Byte2 ^ Byte3 ^ Byte4
+```
+
+颜色 ID：
+
+```text
+0x00 关闭/无颜色
+0x01 红色
+0x02 橙色
+0x03 黄色
+0x04 绿色
+0x05 青色
+0x06 蓝色
+0x07 紫色
+```
+
+示例：
+
+```text
+A5 5A 01 06 00 F8
+```
+
+含义：基础框为红色，核心框为蓝色。
+
+收到有效视觉帧后，WS2812 前半段显示基础框颜色，后半段显示核心框颜色，并按 500 ms 周期亮灭闪烁。解析失败时忽略该帧，灯带保持当前状态。USB CDC 当前会把收到的数据原样回显，便于串口助手测试。
 
 ## NRF24L01 配置
 
@@ -95,10 +135,12 @@ typedef struct
 
 ## 电机与编码器
 
-电机 PWM 已按抽象层拆分：
+PWM 当前只保留 BSP 层，不再有单独的 motor 抽象层：
 
-- `module_motor`：电机控制抽象层
-- `bsp_motor`：TIM/PWM 通道映射和硬件输出
+- `bsp_pwm`：TIM/PWM 通道映射和硬件输出
+- `Bsp_Pwm_Init()`：启动所有 PWM 输出，初始比较值为 0
+- `Bsp_Pwm_SetDuty()`：按百分比设置占空比
+- `Bsp_Pwm_SetPulse()`：直接设置比较值
 
 编码器也已拆分：
 
@@ -106,6 +148,19 @@ typedef struct
 - `bsp_encoder`：TIM2/TIM3 编码器模式适配
 
 麦轮底盘后续控制算法建议新增独立 Module，例如 `module_mecanum`，不要写进 BSP。
+
+## 更新日志
+
+### 2026-06-27
+
+- 调整 App 层结构：删除单独的 `app_remote.c/.h`，遥控接收逻辑合并到 `app_remote_task.c/.h`。
+- 删除独立 `app_usb_task.c/.h`，USB 虚拟串口初始化合并到 `app_ws2812_task`。
+- 新增 `bsp_usb_cdc.c/.h`，USB CDC 收到数据后保存到缓存，并原样回显用于串口测试。
+- 新增 `module_vision_protocol.c/.h`，视觉协议独立放在 Module 层解析。
+- 视觉协议调整为双颜色 ID：基础框颜色 + 核心框颜色。
+- WS2812 任务收到有效视觉帧后，前半段显示基础框颜色，后半段显示核心框颜色，并以 500 ms 周期非阻塞闪烁。
+- 删除 `bsp_motor.c/.h` 和 `module_motor.c/.h`，改为更直接的 `bsp_pwm.c/.h`。
+- `main.c` 初始化流程改为 `Bsp_Encoder_Init()` + `Bsp_Pwm_Init()`，不再初始化 motor 抽象层。
 
 ## 编译
 
