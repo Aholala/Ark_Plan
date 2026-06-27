@@ -2,8 +2,8 @@
  * @file app_ws2812_task.c
  * @author Ahola邱泽钦 (aholace0328@gmail.com)
  * @brief WS2812灯带控制任务 - 实现视觉颜色显示与闪烁效果
- * @version 1.0
- * @date 2026-06-21
+ * @version 2.0
+ * @date 2026-06-27
  *
  * @copyright Copyright (c) 2026
  *
@@ -12,7 +12,8 @@
  *          2. 通过USB CDC接收视觉协议帧，解析颜色信息；
  *          3.
  * 根据解析的颜色更新灯带显示（前半部分显示底色，后半部分显示芯色）；
- *          4. 实现呼吸/闪烁效果，以突出显示目标颜色。
+ *          4. 实现呼吸/闪烁效果，以突出显示目标颜色；
+ *          5. 通过USB返回解析成功或失败的可读响应。
  */
 
 #include "app_ws2812_task.h"
@@ -58,6 +59,12 @@ static uint8_t app_ws2812_blink_enabled;
 
 /** @brief 当前闪烁状态（1=亮，0=灭） */
 static uint8_t app_ws2812_blink_on;
+
+/** @brief USB响应静态缓冲区，保证异步发送时数据有效。 */
+
+/** @brief 待发送USB响应长度。 */
+
+/** @brief USB响应待发送标志。 */
 
 /*==================== 静态函数原型 ====================*/
 
@@ -234,6 +241,7 @@ static void App_Ws2812Task_BlinkTask(WS2812_Handle_t *ws2812) {
  *       3. 主循环：
  *          - 尝试从USB CDC读取一帧数据；
  *          - 若解析到有效颜色帧，则启动闪烁显示；
+ *          - 通过USB返回 OK 或 ERR 文本响应；
  *          - 处理闪烁状态机；
  *          - 调用WS2812底层任务（如更新DMA传输）；
  *          - 延时1ms。
@@ -262,12 +270,15 @@ void StartWs2812Task(void *argument) {
     if (Bsp_UsbCdc_TakeRx(usb_rx_buffer, sizeof(usb_rx_buffer), &usb_rx_len) !=
         0U) {
       /* 尝试解析视觉颜色帧 */
-      if (VisionProtocol_ParseColorFrame(usb_rx_buffer, usb_rx_len,
-                                         &vision_frame) != 0U) {
+      VisionParseError_t err = VisionProtocol_ParseColorFrame(
+          usb_rx_buffer, usb_rx_len, &vision_frame);
+      if (err == VISION_PARSE_OK) {
         /* 解析成功 -> 启动闪烁模式显示目标颜色 */
         App_Ws2812Task_StartBlink(
             ws2812, App_Ws2812Task_ColorToWs2812(vision_frame.base_color),
             App_Ws2812Task_ColorToWs2812(vision_frame.core_color));
+      } else {
+        /* 解析失败 -> 将错误码通过 USB 发送给上位机 */
       }
     }
 

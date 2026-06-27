@@ -2,7 +2,7 @@
  * @file bsp_usb_cdc.c
  * @author Ahola邱泽钦 (aholace0328@gmail.com)
  * @brief 板级支持包 - USB CDC虚拟串口驱动
- * @version 1.0
+ * @version 2.0
  * @date 2026-06-27
  *
  * @copyright Copyright (c) 2026
@@ -12,6 +12,7 @@
  *          2. 接收数据取出接口（非阻塞，供应用层轮询调用）；
  *          3. 数据发送接口（直接调用底层CDC发送函数）。
  *          @note 接收缓冲区为单帧缓冲，新数据会覆盖旧数据。
+ *          @note 已关闭回环模式，避免干扰应用层协议响应。
  */
 
 #include "bsp_usb_cdc.h"
@@ -39,7 +40,6 @@ static uint8_t bsp_usb_cdc_rx_buffer[BSP_USB_CDC_RX_BUFFER_SIZE];
  * @note 本函数运行在中断上下文，应快速执行，避免耗时操作。
  * @note 若数据长度超过缓冲区容量，则只复制前 N 个字节（N为缓冲区大小）。
  * @note 新数据会覆盖旧数据，应用层需及时调用 Bsp_UsbCdc_TakeRx() 取走数据。
- * @note 该函数内部将接收到的数据回传给主机（回环测试），便于调试。
  *
  * @warning data 指针必须有效，否则直接返回。
  */
@@ -65,8 +65,8 @@ void Bsp_UsbCdc_OnRx(const uint8_t *data, uint16_t len) {
   bsp_usb_cdc_rx_len = copy_len;
   bsp_usb_cdc_has_rx = 1U;
 
-  /* 回传数据（环回模式，便于上位机调试） */
-  (void)CDC_Transmit_FS(bsp_usb_cdc_rx_buffer, copy_len);
+  /* 注释掉回环发送，避免干扰协议响应 */
+  // (void)CDC_Transmit_FS(bsp_usb_cdc_rx_buffer, copy_len);
 }
 
 /**
@@ -81,7 +81,7 @@ void Bsp_UsbCdc_OnRx(const uint8_t *data, uint16_t len) {
  *
  * @note 调用后会清除接收有效标志，下一次调用前需等待新数据到达。
  * @note 若 data_size 小于实际接收长度，则只拷贝前 data_size 个字节，
- *       但 len 返回实际长度（截断前长度），调用者需注意。
+ *       但 len 返回实际拷贝长度（截断后）。
  * @note 该函数可被应用层轮询调用，以检测并获取新数据。
  */
 uint8_t Bsp_UsbCdc_TakeRx(uint8_t *data, uint16_t data_size, uint16_t *len) {
@@ -103,9 +103,8 @@ uint8_t Bsp_UsbCdc_TakeRx(uint8_t *data, uint16_t data_size, uint16_t *len) {
     data[i] = bsp_usb_cdc_rx_buffer[i];
   }
 
-  /* 返回实际数据长度（即使截断，也返回原始长度供上层判断） */
-  *len = copy_len; /* 注：若需返回原始长度，可改为
-                      bsp_usb_cdc_rx_len，但此处为安全仅返回拷贝长度 */
+  /* 返回实际拷贝长度 */
+  *len = copy_len;
 
   /* 清除接收标志，表示数据已被取走 */
   bsp_usb_cdc_has_rx = 0U;
@@ -127,5 +126,5 @@ uint8_t Bsp_UsbCdc_TakeRx(uint8_t *data, uint16_t data_size, uint16_t *len) {
  * @note 若设备未连接或正在发送中，可能返回失败。
  */
 uint8_t Bsp_UsbCdc_Transmit(uint8_t *data, uint16_t len) {
-  return CDC_Transmit_FS(data, len);
+  return (CDC_Transmit_FS(data, len) == USBD_OK) ? 1U : 0U;
 }

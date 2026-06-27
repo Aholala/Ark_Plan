@@ -23,6 +23,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "bsp_usb_cdc.h"
+#include "module_vision_protocol.h"
 
 /* USER CODE END INCLUDE */
 
@@ -95,6 +96,7 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+static uint8_t CdcResponseBuffer[32];
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -129,6 +131,8 @@ static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
+static const char *CDC_VisionErrorName(VisionParseError_t err);
+static uint16_t CDC_BuildErrorResponse(VisionParseError_t err);
 
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
@@ -146,6 +150,49 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 };
 
 /* Private functions ---------------------------------------------------------*/
+/* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+static const char *CDC_VisionErrorName(VisionParseError_t err)
+{
+  switch (err) {
+  case VISION_ERR_NULL_PTR:
+    return "NULL_PTR";
+  case VISION_ERR_LEN_TOO_SHORT:
+    return "LEN_TOO_SHORT";
+  case VISION_ERR_SOF_MISMATCH:
+    return "SOF_MISMATCH";
+  case VISION_ERR_INVALID_COLOR:
+    return "INVALID_COLOR";
+  case VISION_ERR_CRC_FAIL:
+    return "CRC_FAIL";
+  case VISION_PARSE_OK:
+  default:
+    return "UNKNOWN";
+  }
+}
+
+static uint16_t CDC_BuildErrorResponse(VisionParseError_t err)
+{
+  const char *name = CDC_VisionErrorName(err);
+  uint16_t len = 0U;
+
+  CdcResponseBuffer[len++] = 'E';
+  CdcResponseBuffer[len++] = 'R';
+  CdcResponseBuffer[len++] = 'R';
+  CdcResponseBuffer[len++] = ' ';
+
+  while ((name != 0) && (*name != '\0') &&
+         (len < (uint16_t)(sizeof(CdcResponseBuffer) - 2U))) {
+    CdcResponseBuffer[len++] = (uint8_t)(*name);
+    name++;
+  }
+
+  CdcResponseBuffer[len++] = '\r';
+  CdcResponseBuffer[len++] = '\n';
+  return len;
+}
+
+/* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
+
 /**
   * @brief  Initializes the CDC media low layer over the FS USB IP
   * @retval USBD_OK if all operations are OK else USBD_FAIL
@@ -262,9 +309,40 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  VisionColorFrame_t frame;
+  VisionParseError_t err;
+  uint16_t response_len;
+
   Bsp_UsbCdc_OnRx(Buf, (uint16_t)*Len);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+
+  err = VisionProtocol_ParseColorFrame(Buf, (uint16_t)*Len, &frame);
+  if (err == VISION_PARSE_OK) {
+    CdcResponseBuffer[0] = 'O';
+    CdcResponseBuffer[1] = 'K';
+    CdcResponseBuffer[2] = ' ';
+    CdcResponseBuffer[3] = 'b';
+    CdcResponseBuffer[4] = 'a';
+    CdcResponseBuffer[5] = 's';
+    CdcResponseBuffer[6] = 'e';
+    CdcResponseBuffer[7] = '=';
+    CdcResponseBuffer[8] = (uint8_t)('0' + (uint8_t)frame.base_color);
+    CdcResponseBuffer[9] = ' ';
+    CdcResponseBuffer[10] = 'c';
+    CdcResponseBuffer[11] = 'o';
+    CdcResponseBuffer[12] = 'r';
+    CdcResponseBuffer[13] = 'e';
+    CdcResponseBuffer[14] = '=';
+    CdcResponseBuffer[15] = (uint8_t)('0' + (uint8_t)frame.core_color);
+    CdcResponseBuffer[16] = '\r';
+    CdcResponseBuffer[17] = '\n';
+    response_len = 18U;
+  } else {
+    response_len = CDC_BuildErrorResponse(err);
+  }
+
+  (void)CDC_Transmit_FS(CdcResponseBuffer, response_len);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -285,6 +363,10 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  if ((Buf == NULL) || (Len == 0U) || (hcdc == NULL) ||
+      (hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED)) {
+    return USBD_FAIL;
+  }
   if (hcdc->TxState != 0){
     return USBD_BUSY;
   }

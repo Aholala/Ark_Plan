@@ -16,6 +16,8 @@ extern "C" {
 
 #include "main.h"
 
+extern DMA_HandleTypeDef hdma_spi1_tx;
+
 void MX_DMA_Init(void);
 
 #ifdef __cplusplus
