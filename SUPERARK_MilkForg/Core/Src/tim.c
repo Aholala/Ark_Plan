@@ -51,7 +51,7 @@ void MX_TIM1_Init(void)
   }
 
   MX_TIM_PWM_Config(&htim1, TIM_CHANNEL_1, TIM_OCMODE_PWM1);
-  MX_TIM_PWM_Config(&htim1, TIM_CHANNEL_3, TIM_OCMODE_PWM2);
+  MX_TIM_PWM_Config(&htim1, TIM_CHANNEL_3, TIM_OCMODE_PWM1);
 
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
@@ -157,9 +157,9 @@ void MX_TIM4_Init(void)
   }
 
   MX_TIM_PWM_Config(&htim4, TIM_CHANNEL_1, TIM_OCMODE_PWM1);
-  MX_TIM_PWM_Config(&htim4, TIM_CHANNEL_2, TIM_OCMODE_PWM2);
+  MX_TIM_PWM_Config(&htim4, TIM_CHANNEL_2, TIM_OCMODE_PWM1);
   MX_TIM_PWM_Config(&htim4, TIM_CHANNEL_3, TIM_OCMODE_PWM1);
-  MX_TIM_PWM_Config(&htim4, TIM_CHANNEL_4, TIM_OCMODE_PWM2);
+  MX_TIM_PWM_Config(&htim4, TIM_CHANNEL_4, TIM_OCMODE_PWM1);
 }
 
 void MX_TIM5_Init(void)
@@ -185,7 +185,7 @@ void MX_TIM5_Init(void)
   }
 
   MX_TIM_PWM_Config(&htim5, TIM_CHANNEL_3, TIM_OCMODE_PWM1);
-  MX_TIM_PWM_Config(&htim5, TIM_CHANNEL_4, TIM_OCMODE_PWM2);
+  MX_TIM_PWM_Config(&htim5, TIM_CHANNEL_4, TIM_OCMODE_PWM1);
 }
 
 void MX_TIM8_Init(void)
@@ -213,9 +213,9 @@ void MX_TIM8_Init(void)
   }
 
   MX_TIM_PWM_Config(&htim8, TIM_CHANNEL_1, TIM_OCMODE_PWM1);
-  MX_TIM_PWM_Config(&htim8, TIM_CHANNEL_2, TIM_OCMODE_PWM2);
+  MX_TIM_PWM_Config(&htim8, TIM_CHANNEL_2, TIM_OCMODE_PWM1);
   MX_TIM_PWM_Config(&htim8, TIM_CHANNEL_3, TIM_OCMODE_PWM1);
-  MX_TIM_PWM_Config(&htim8, TIM_CHANNEL_4, TIM_OCMODE_PWM2);
+  MX_TIM_PWM_Config(&htim8, TIM_CHANNEL_4, TIM_OCMODE_PWM1);
 
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;

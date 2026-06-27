@@ -40,6 +40,16 @@ typedef enum {
   BSP_PWM_COUNT         /**< PWM通道总数（用于边界检查） */
 } BspPwmChannel_t;
 
+typedef enum {
+  BSP_PWM_MOTOR_1 = 0,
+  BSP_PWM_MOTOR_2,
+  BSP_PWM_MOTOR_3,
+  BSP_PWM_MOTOR_4,
+  BSP_PWM_MOTOR_5,
+  BSP_PWM_MOTOR_6,
+  BSP_PWM_MOTOR_COUNT
+} BspPwmMotor_t;
+
 /**
  * @brief 初始化所有PWM通道
  * @note 将所有通道输出初始为0脉冲，并启动PWM定时器
@@ -56,6 +66,12 @@ void Bsp_Pwm_Init(void);
  * @note 若通道号无效则函数直接返回
  */
 void Bsp_Pwm_SetDuty(BspPwmChannel_t channel, uint8_t duty_percent);
+
+void Bsp_Pwm_SetMotorDuty(BspPwmMotor_t motor, int8_t duty_percent);
+
+void Bsp_Pwm_StopMotor(BspPwmMotor_t motor);
+
+void Bsp_Pwm_StopAllMotors(void);
 
 /**
  * @brief 设置指定PWM通道的脉冲宽度（定时器计数值）

@@ -27,6 +27,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "bsp_dwt.h"
 #include "bsp_encoder.h"
 #include "bsp_pwm.h"
 
@@ -90,21 +91,6 @@ void MX_FREERTOS_Init(void);
  * bridge direction.
  */
 #if IR2104_MOTOR_TEST_ENABLE
-static void IR2104_DelayUs(uint32_t us)
-{
-  uint32_t start;
-  uint32_t ticks;
-
-  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-
-  start = DWT->CYCCNT;
-  ticks = (SystemCoreClock / 1000000U) * us;
-  while ((uint32_t)(DWT->CYCCNT - start) < ticks)
-  {
-  }
-}
-
 static void IR2104_SetBridgeWithDeadtime(BspPwmChannel_t in_a,
                                          BspPwmChannel_t in_b,
                                          uint8_t duty_a,
@@ -112,7 +98,7 @@ static void IR2104_SetBridgeWithDeadtime(BspPwmChannel_t in_a,
 {
   Bsp_Pwm_SetDuty(in_a, 0U);
   Bsp_Pwm_SetDuty(in_b, 0U);
-  IR2104_DelayUs(IR2104_DEADTIME_US);
+  Bsp_Dwt_DelayUs(IR2104_DEADTIME_US);
   Bsp_Pwm_SetDuty(in_a, duty_a);
   Bsp_Pwm_SetDuty(in_b, duty_b);
 }

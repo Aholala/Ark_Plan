@@ -46,6 +46,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     User/Bsp/bsp_ws2812.c
+    User/Bsp/bsp_dwt.c
     User/Bsp/bsp_encoder.c
     User/Bsp/bsp_pwm.c
     User/Bsp/bsp_radio_link.c
