@@ -154,12 +154,12 @@ int main(void)
   MX_DMA_Init();
   MX_SPI1_Init();
   MX_SPI3_Init();
+  MX_TIM4_Init();
+  MX_TIM8_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_TIM4_Init();
   MX_TIM5_Init();
-  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
   Bsp_Encoder_Init();
   Bsp_Pwm_Init();

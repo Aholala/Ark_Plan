@@ -150,49 +150,6 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 };
 
 /* Private functions ---------------------------------------------------------*/
-/* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-static const char *CDC_VisionErrorName(VisionParseError_t err)
-{
-  switch (err) {
-  case VISION_ERR_NULL_PTR:
-    return "NULL_PTR";
-  case VISION_ERR_LEN_TOO_SHORT:
-    return "LEN_TOO_SHORT";
-  case VISION_ERR_SOF_MISMATCH:
-    return "SOF_MISMATCH";
-  case VISION_ERR_INVALID_COLOR:
-    return "INVALID_COLOR";
-  case VISION_ERR_CRC_FAIL:
-    return "CRC_FAIL";
-  case VISION_PARSE_OK:
-  default:
-    return "UNKNOWN";
-  }
-}
-
-static uint16_t CDC_BuildErrorResponse(VisionParseError_t err)
-{
-  const char *name = CDC_VisionErrorName(err);
-  uint16_t len = 0U;
-
-  CdcResponseBuffer[len++] = 'E';
-  CdcResponseBuffer[len++] = 'R';
-  CdcResponseBuffer[len++] = 'R';
-  CdcResponseBuffer[len++] = ' ';
-
-  while ((name != 0) && (*name != '\0') &&
-         (len < (uint16_t)(sizeof(CdcResponseBuffer) - 2U))) {
-    CdcResponseBuffer[len++] = (uint8_t)(*name);
-    name++;
-  }
-
-  CdcResponseBuffer[len++] = '\r';
-  CdcResponseBuffer[len++] = '\n';
-  return len;
-}
-
-/* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
-
 /**
   * @brief  Initializes the CDC media low layer over the FS USB IP
   * @retval USBD_OK if all operations are OK else USBD_FAIL
@@ -400,6 +357,45 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+static const char *CDC_VisionErrorName(VisionParseError_t err)
+{
+  switch (err) {
+  case VISION_ERR_NULL_PTR:
+    return "NULL_PTR";
+  case VISION_ERR_LEN_TOO_SHORT:
+    return "LEN_TOO_SHORT";
+  case VISION_ERR_SOF_MISMATCH:
+    return "SOF_MISMATCH";
+  case VISION_ERR_INVALID_COLOR:
+    return "INVALID_COLOR";
+  case VISION_ERR_CRC_FAIL:
+    return "CRC_FAIL";
+  case VISION_PARSE_OK:
+  default:
+    return "UNKNOWN";
+  }
+}
+
+static uint16_t CDC_BuildErrorResponse(VisionParseError_t err)
+{
+  const char *name = CDC_VisionErrorName(err);
+  uint16_t len = 0U;
+
+  CdcResponseBuffer[len++] = 'E';
+  CdcResponseBuffer[len++] = 'R';
+  CdcResponseBuffer[len++] = 'R';
+  CdcResponseBuffer[len++] = ' ';
+
+  while ((name != 0) && (*name != '\0') &&
+         (len < (uint16_t)(sizeof(CdcResponseBuffer) - 2U))) {
+    CdcResponseBuffer[len++] = (uint8_t)(*name);
+    name++;
+  }
+
+  CdcResponseBuffer[len++] = '\r';
+  CdcResponseBuffer[len++] = '\n';
+  return len;
+}
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
