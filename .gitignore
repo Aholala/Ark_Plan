@@ -1,56 +1,20 @@
-# Prerequisites
-*.d
+# Build directory: ignore intermediate files
+build/*
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+# Keep final firmware outputs
+!build/**/*.hex
+!build/**/*.bin
+!build/**/*.elf
+!build/**/*.map
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# Local backup
+.gitignore.local.bak
 
-# Precompiled Headers
-*.gch
-*.pch
+# IDE local config
+.vscode/
+.settings/
+.mxproject
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# debug information files
-*.dwo
-remote_cotrol/ye_remote_control/remote_control
+# OS/editor junk
+.DS_Store
+Thumbs.db
