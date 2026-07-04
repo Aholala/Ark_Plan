@@ -76,6 +76,7 @@ typedef struct {
   /* 无线通信相关 */
   uint8_t send_flag;         /* 上次数据发送结果（1成功，0失败） */
   uint8_t success_ratio;     /* 最近10次发送成功率（0~10） */
+  uint8_t send_busy;         /* NRF packet is waiting for TX result */
   volatile uint8_t send_due; /* 发送定时标志（由定时器置位，主循环清除） */
 
   uint8_t mode; /* 工作模式：0=发送模式（显示摇杆），1=接收模式（显示反馈） */
@@ -95,7 +96,6 @@ App_Remote_ScanInputs(AppRemoteContext *ctx); /* 扫描所有输入（ADC+按键
 static void
 App_Remote_SendPacket(AppRemoteContext *ctx); /* 打包并发送控制数据包 */
 static void App_Remote_UpdateDisplay(AppRemoteContext *ctx); /* 更新OLED显示 */
-static void App_Remote_ShowWelcome(void);                    /* 显示欢迎界面 */
 
 /**
  * @brief 遥控器应用初始化
@@ -106,7 +106,8 @@ static void App_Remote_ShowWelcome(void);                    /* 显示欢迎界�
 void App_Remote_Init(void) {
   memset(&app_remote, 0, sizeof(app_remote));
   Module_PeriodicTimer_Init(&app_send_timer, APP_SEND_PERIOD_MS);
-  app_remote.state = APP_REMOTE_WAIT_START;
+  app_remote.state = APP_REMOTE_RUN;
+  app_remote.send_due = 1U;
 
   OLED_Init();
   Key_Init();
@@ -114,7 +115,7 @@ void App_Remote_Init(void) {
   Bsp_RadioLink_Init();
   Bsp_Time_InitTick();
 
-  App_Remote_ShowWelcome();
+  OLED_Clear();
 }
 
 /**
@@ -139,9 +140,7 @@ void App_Remote_Task(void) {
   /* 正常运行状态 */
   App_Remote_ScanInputs(ctx); /* 扫描摇杆和按键输入 */
 
-  /* 若发送定时到，则发送数据包 */
-  if (ctx->send_due) {
-    ctx->send_due = 0U;
+  if ((ctx->send_busy != 0U) || (ctx->send_due != 0U)) {
     App_Remote_SendPacket(ctx);
   }
 
@@ -166,20 +165,6 @@ void App_Remote_Tick1ms(void) {
   if (Module_PeriodicTimer_Tick(&app_send_timer) != 0U) {
     app_remote.send_due = 1U;
   }
-}
-
-/**
- * @brief 显示欢迎界面
- * @retval 无
- * @note  显示团队名称、版本信息和启动提示（K10>表示按KEY_10启动）
- */
-static void App_Remote_ShowWelcome(void) {
-  OLED_Clear();
-  OLED_ShowString(0, 0, " Milkforg Team   ", OLED_8X16);
-  OLED_ShowString(4, 16, " Remote Tester ", OLED_8X16);
-  OLED_ShowString(0, 32, "      V1.0      ", OLED_8X16);
-  OLED_ShowString(0, 48, "            K10>", OLED_8X16);
-  OLED_Update();
 }
 
 /**
@@ -252,8 +237,23 @@ static void App_Remote_SendPacket(AppRemoteContext *ctx) {
   packet.key = ctx->key_pending;
   packet.key_seq = ctx->key_pending_seq;
 
-  /* 发送控制数据包 */
+  if ((ctx->send_busy == 0U) && (ctx->send_due == 0U)) {
+    return;
+  }
+
+  if (ctx->send_busy == 0U) {
+    ctx->send_due = 0U;
+  }
+
   ctx->send_flag = Bsp_RadioLink_SendControl(&packet);
+
+  if (ctx->send_flag == 0U) {
+    ctx->send_busy = 1U;
+    return;
+  }
+
+  ctx->send_busy = 0U;
+
   if (ctx->send_flag == 1U) /* 发送成功 */
   {
     if (ctx->key_repeat_remaining > 0U) {
@@ -338,6 +338,8 @@ static void App_Remote_UpdateDisplay(AppRemoteContext *ctx) {
     OLED_Printf(0, 32, OLED_8X16, "LV:%+04d", ctx->lv);
     OLED_Printf(72, 16, OLED_8X16, "RH:%+04d", ctx->rh);
     OLED_Printf(72, 32, OLED_8X16, "RV:%+04d", ctx->rv);
+    OLED_Printf(56, 0, OLED_6X8, "S:%d B:%d", ctx->send_flag,
+                ctx->send_busy);
   }
   /* 模式1：接收模式，尝试接收反馈数据并显示 */
   else if (ctx->mode == 1U) {

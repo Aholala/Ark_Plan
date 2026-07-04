@@ -57,6 +57,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Module/module_remote_protocol.c
     User/Module/module_vision_protocol.c
     User/Module/module_ws2812.c
+    User/Lib/lib_mecanum.c
     User/Bsp/bsp_nrf24l01.c
     User/App/app_chassis_task.c
     User/App/app_remote_task.c

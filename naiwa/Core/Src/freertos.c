@@ -70,10 +70,10 @@ const osThreadAttr_t ws2812Task_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for chassisTask */
-osThreadId_t chassisTaskHandle;
-const osThreadAttr_t chassisTask_attributes = {
-  .name = "chassisTask",
+/* Definitions for chassicTask */
+osThreadId_t chassicTaskHandle;
+const osThreadAttr_t chassicTask_attributes = {
+  .name = "chassicTask",
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
@@ -127,8 +127,8 @@ void MX_FREERTOS_Init(void) {
   /* creation of ws2812Task */
   ws2812TaskHandle = osThreadNew(StartWs2812Task, NULL, &ws2812Task_attributes);
 
-  /* creation of chassisTask */
-  chassisTaskHandle = osThreadNew(StartChassicTask, NULL, &chassisTask_attributes);
+  /* creation of chassicTask */
+  chassicTaskHandle = osThreadNew(StartChassicTask, NULL, &chassicTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
