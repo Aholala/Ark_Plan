@@ -29,6 +29,9 @@ static volatile uint8_t bsp_usb_cdc_has_rx;
 /** @brief 接收数据缓冲区（单帧缓冲，大小由 BSP_USB_CDC_RX_BUFFER_SIZE 定义） */
 static uint8_t bsp_usb_cdc_rx_buffer[BSP_USB_CDC_RX_BUFFER_SIZE];
 
+/** @brief 最后收到 USB 数据的时刻（系统滴答，中断上下文写入，任务上下文读取） */
+volatile uint32_t bsp_usb_cdc_last_rx_tick;
+
 /*==================== 函数实现 ====================*/
 
 /**
@@ -64,6 +67,7 @@ void Bsp_UsbCdc_OnRx(const uint8_t *data, uint16_t len) {
   /* 更新接收状态 */
   bsp_usb_cdc_rx_len = copy_len;
   bsp_usb_cdc_has_rx = 1U;
+  bsp_usb_cdc_last_rx_tick = HAL_GetTick();
 
   /* 注释掉回环发送，避免干扰协议响应 */
   // (void)CDC_Transmit_FS(bsp_usb_cdc_rx_buffer, copy_len);

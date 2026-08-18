@@ -78,6 +78,8 @@ void App_Remote_Task(void) {
         app_remote_data.key_seq = packet.key_seq;
         app_remote_data.key_event_count++; /* 按键事件计数（可用于统计） */
       }
+    } else {
+      app_remote_data.key = 0U;
     }
 
     app_remote_data.last_rx_tick = now; /* 更新最后接收时间 */
@@ -114,6 +116,22 @@ void App_Remote_Task(void) {
  * @note  该函数返回的指针指向静态内部数据，上层应用可安全读取
  */
 const AppRemoteData_t *App_Remote_GetData(void) { return &app_remote_data; }
+
+/**
+ * @brief 获取遥控器数据的原子快照（线程安全）
+ * @param snap 输出：遥控器数据快照的本地副本
+ * @note  在临界区内一次性拷贝整个结构体，避免读到半更新数据。
+ *         调用方使用栈上局部变量接收，无需担心指针生命周期。
+ */
+void App_Remote_GetSnapshot(AppRemoteData_t *snap) {
+  if (snap == 0) {
+    return;
+  }
+
+  taskENTER_CRITICAL();
+  memcpy(snap, &app_remote_data, sizeof(AppRemoteData_t));
+  taskEXIT_CRITICAL();
+}
 
 void StartRemoteTask(void *argument) {
   (void)argument;

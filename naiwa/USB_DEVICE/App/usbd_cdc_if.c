@@ -266,7 +266,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  VisionColorFrame_t frame;
+  VisionFrame_t frame;
   VisionParseError_t err;
   uint16_t response_len;
 
@@ -274,27 +274,59 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
-  err = VisionProtocol_ParseColorFrame(Buf, (uint16_t)*Len, &frame);
+  err = VisionProtocol_ParseFrame(Buf, (uint16_t)*Len, &frame);
   if (err == VISION_PARSE_OK) {
     CdcResponseBuffer[0] = 'O';
     CdcResponseBuffer[1] = 'K';
     CdcResponseBuffer[2] = ' ';
-    CdcResponseBuffer[3] = 'b';
-    CdcResponseBuffer[4] = 'a';
-    CdcResponseBuffer[5] = 's';
-    CdcResponseBuffer[6] = 'e';
-    CdcResponseBuffer[7] = '=';
-    CdcResponseBuffer[8] = (uint8_t)('0' + (uint8_t)frame.base_color);
-    CdcResponseBuffer[9] = ' ';
-    CdcResponseBuffer[10] = 'c';
-    CdcResponseBuffer[11] = 'o';
-    CdcResponseBuffer[12] = 'r';
-    CdcResponseBuffer[13] = 'e';
-    CdcResponseBuffer[14] = '=';
-    CdcResponseBuffer[15] = (uint8_t)('0' + (uint8_t)frame.core_color);
-    CdcResponseBuffer[16] = '\r';
-    CdcResponseBuffer[17] = '\n';
-    response_len = 18U;
+    response_len = 3U;
+
+    if (frame.data_source == VISION_SOURCE_OWN_QR) {
+      /* OK own base=X core=Y */
+      CdcResponseBuffer[3]  = 'o';
+      CdcResponseBuffer[4]  = 'w';
+      CdcResponseBuffer[5]  = 'n';
+      CdcResponseBuffer[6]  = ' ';
+      CdcResponseBuffer[7]  = 'b';
+      CdcResponseBuffer[8]  = 'a';
+      CdcResponseBuffer[9]  = 's';
+      CdcResponseBuffer[10] = 'e';
+      CdcResponseBuffer[11] = '=';
+      CdcResponseBuffer[12] = (uint8_t)('0' + (uint8_t)frame.base_color);
+      CdcResponseBuffer[13] = ' ';
+      CdcResponseBuffer[14] = 'c';
+      CdcResponseBuffer[15] = 'o';
+      CdcResponseBuffer[16] = 'r';
+      CdcResponseBuffer[17] = 'e';
+      CdcResponseBuffer[18] = '=';
+      CdcResponseBuffer[19] = (uint8_t)('0' + (uint8_t)frame.core_color);
+      response_len = 20U;
+    } else {
+      /* OK ball c1=X c2=Y c3=Z */
+      CdcResponseBuffer[3]  = 'b';
+      CdcResponseBuffer[4]  = 'a';
+      CdcResponseBuffer[5]  = 'l';
+      CdcResponseBuffer[6]  = 'l';
+      CdcResponseBuffer[7]  = ' ';
+      CdcResponseBuffer[8]  = 'c';
+      CdcResponseBuffer[9]  = '1';
+      CdcResponseBuffer[10] = '=';
+      CdcResponseBuffer[11] = (uint8_t)('0' + (uint8_t)frame.ball_color1);
+      CdcResponseBuffer[12] = ' ';
+      CdcResponseBuffer[13] = 'c';
+      CdcResponseBuffer[14] = '2';
+      CdcResponseBuffer[15] = '=';
+      CdcResponseBuffer[16] = (uint8_t)('0' + (uint8_t)frame.ball_color2);
+      CdcResponseBuffer[17] = ' ';
+      CdcResponseBuffer[18] = 'c';
+      CdcResponseBuffer[19] = '3';
+      CdcResponseBuffer[20] = '=';
+      CdcResponseBuffer[21] = (uint8_t)('0' + (uint8_t)frame.ball_color3);
+      response_len = 22U;
+    }
+
+    CdcResponseBuffer[response_len++] = '\r';
+    CdcResponseBuffer[response_len++] = '\n';
   } else {
     response_len = CDC_BuildErrorResponse(err);
   }

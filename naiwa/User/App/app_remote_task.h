@@ -68,8 +68,18 @@ void App_Remote_Task(void);
  * @brief 获取最新遥控器数据的只读指针
  * @return const AppRemoteData_t* 指向内部数据对象的指针
  * @note  返回的指针指向静态数据，上层应用可安全读取但不应修改
+ * @warning 多任务环境下指针指向的数据可能被 Remote 任务并发修改，
+ *          推荐使用 App_Remote_GetSnapshot() 获取原子快照。
  */
 const AppRemoteData_t *App_Remote_GetData(void);
+
+/**
+ * @brief 获取遥控器数据的原子快照（线程安全）
+ * @param snap 输出：遥控器数据快照的本地副本
+ * @note  在临界区内一次性拷贝整个结构体，避免读到半更新数据。
+ *         调用方使用栈上局部变量接收，无需担心指针生命周期。
+ */
+void App_Remote_GetSnapshot(AppRemoteData_t *snap);
 
 void StartRemoteTask(void *argument);
 

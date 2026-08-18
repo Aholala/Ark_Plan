@@ -77,6 +77,9 @@ uint8_t Bsp_UsbCdc_Transmit(uint8_t *data, uint16_t len);
 
 /** @} */ /* end of BSP_USB_CDC group */
 
+/** @brief 最后收到 USB 数据的系统滴答（中断写入，任务读取，用于超时检测） */
+extern volatile uint32_t bsp_usb_cdc_last_rx_tick;
+
 #ifdef __cplusplus
 }
 #endif

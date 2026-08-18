@@ -18,6 +18,7 @@
 
 #include "app_chassis_task.h"
 #include "app_remote_task.h"
+#include "app_arm_task.h"
 #include "cmsis_os.h"
 #include "lib_mecanum.h"
 
@@ -176,19 +177,30 @@ static int8_t App_Chassis_ApplyDeadband(int8_t value) {
  *       否则进行麦克纳姆轮运动学解算，将摇杆值映射为四轮占空比。
  */
 static void App_Chassis_UpdateRemoteControl(void) {
-  const AppRemoteData_t *remote = App_Remote_GetData();
+  AppRemoteData_t remote;
+  App_Remote_GetSnapshot(&remote);
   LibMecanumOutput_t output;
 
-  if ((remote == 0) || (remote->connected == 0U)) {
+  if (remote.connected == 0U) {
     App_Chassis_StopAllMotors();
     return;
   }
 
-  /* 运动学解算：输入左右摇杆的X/Y分量，输出各轮占空比 */
-  Lib_Mecanum_Mix(App_Chassis_ApplyDeadband(remote->lh),
-                  App_Chassis_ApplyDeadband(remote->lv),
-                  App_Chassis_ApplyDeadband(remote->rh), CHASSIS_MOTOR_DUTY_MAX,
-                  &output);
+  /* 运动学解算 */
+  if (App_Arm_IsControlActive() != 0U) {
+    /* 机械臂模式：左摇杆归机械臂，右摇杆保留底盘旋转 */
+    {
+      int8_t yaw_raw = App_Chassis_ApplyDeadband(remote.rh);
+      int8_t yaw = (int8_t)(((int16_t)yaw_raw * 6) / 10);
+      Lib_Mecanum_Mix(0, 0, yaw, CHASSIS_MOTOR_DUTY_MAX, &output);
+    }
+  } else {
+    /* 底盘模式：全摇杆控制 */
+    Lib_Mecanum_Mix(-App_Chassis_ApplyDeadband(remote.lh),
+                    App_Chassis_ApplyDeadband(remote.lv),
+                    App_Chassis_ApplyDeadband(remote.rh), CHASSIS_MOTOR_DUTY_MAX,
+                    &output);
+  }
 
   /* 设置四个电机的目标占空比 */
   App_Chassis_SetMotorDuty(MODULE_MOTOR_1, output.m1);

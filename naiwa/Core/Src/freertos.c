@@ -75,6 +75,13 @@ osThreadId_t chassicTaskHandle;
 const osThreadAttr_t chassicTask_attributes = {
   .name = "chassicTask",
   .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for armTask */
+osThreadId_t armTaskHandle;
+const osThreadAttr_t armTask_attributes = {
+  .name = "armTask",
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
 
@@ -87,6 +94,7 @@ void StartDefaultTask(void *argument);
 void StartRemoteTask(void *argument);
 void StartWs2812Task(void *argument);
 void StartChassicTask(void *argument);
+void StartarmTask(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -130,6 +138,9 @@ void MX_FREERTOS_Init(void) {
   /* creation of chassicTask */
   chassicTaskHandle = osThreadNew(StartChassicTask, NULL, &chassicTask_attributes);
 
+  /* creation of armTask */
+  armTaskHandle = osThreadNew(StartarmTask, NULL, &armTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -156,7 +167,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1000);
+    osDelay(5);
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -213,6 +224,24 @@ __weak void StartChassicTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartChassicTask */
+}
+
+/* USER CODE BEGIN Header_StartarmTask */
+/**
+* @brief Function implementing the armTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartarmTask */
+__weak void StartarmTask(void *argument)
+{
+  /* USER CODE BEGIN StartarmTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartarmTask */
 }
 
 /* Private application code --------------------------------------------------*/

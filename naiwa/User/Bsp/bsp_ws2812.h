@@ -18,9 +18,9 @@ extern "C" {
 #include "main.h"
 #include "module_ws2812.h"
 
-/* 若未定义 LED 数量，默认 30 个 */
+/* 若未定义 LED 数量，默认 52 个 */
 #ifndef BSP_WS2812_LED_COUNT
-#define BSP_WS2812_LED_COUNT 30U
+#define BSP_WS2812_LED_COUNT 53U
 #endif
 
 /**

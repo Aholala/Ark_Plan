@@ -62,6 +62,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/App/app_chassis_task.c
     User/App/app_remote_task.c
     User/App/app_ws2812_task.c
+    User/App/app_arm_task.c
+    User/App/app_encoder_reader.c
+    User/Module/module_pid.c
 )
 
 # Add include paths
